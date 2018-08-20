@@ -1,7 +1,8 @@
-const rp = require('request-promise')
+const axios = require('axios')
 const express = require('express')
-const app = express()
 const Stellar = require('stellar-sdk')
+
+const app = express()
 const server = new Stellar.Server('https://horizon-testnet.stellar.org')
 
 Stellar.Network.useTestNetwork()
@@ -14,10 +15,9 @@ app.get('/seed', async (req, res) => {
     
     await Promise.all(
         pairs.map(
-            async (pair) => await rp.get({
-                uri: 'https://horizon-testnet.stellar.org/friendbot',
-                qs: { addr: pair.publicKey() },
-                json: true
+            async (pair) => await axios.get('/friendbot', {
+                baseURL: 'https://horizon-testnet.stellar.org/',
+                params: { addr: pair.publicKey() }
             })
         )
     )
