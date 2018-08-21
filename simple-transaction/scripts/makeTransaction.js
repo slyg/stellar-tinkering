@@ -1,0 +1,35 @@
+const Stellar = require('stellar-sdk')
+const pairs = require('../pairs.json')
+
+Stellar.Network.useTestNetwork()
+
+const server = new Stellar.Server('https://horizon-testnet.stellar.org')
+
+const transaction = async (pairA, pairB, asset, amount) => {
+
+    const paymentToB = {
+        destination: pairB.publicKey,
+        asset,
+        amount,
+    }
+
+    const accountA = await server.loadAccount(pairA.publicKey)
+
+    const transaction = new Stellar.TransactionBuilder(accountA)
+        .addOperation(Stellar.Operation.payment(paymentToB))
+        .addMemo(Stellar.Memo.text('Test Transaction'))
+        .build()
+
+    const StellarPairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+
+    transaction.sign(StellarPairA)
+
+    await server.submitTransaction(transaction)
+
+}
+
+const [pairA, pairB] = pairs
+
+transaction(pairA, pairB, Stellar.Asset.native(),'30.0000001')
+    .then(() => console.log('ok'))
+    .catch((e) => { console.error(e); throw e})
