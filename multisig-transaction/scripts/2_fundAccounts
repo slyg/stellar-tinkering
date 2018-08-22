@@ -15,8 +15,6 @@ const fundAccounts = async (pairs) => await Promise.all(
     )
 )
 
-console.log(pairs)
-
 fundAccounts(pairs)
     .then(() => console.log('ok'))
     .catch((e) => { console.error(e); throw e})
