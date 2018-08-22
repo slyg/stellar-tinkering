@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+const fs = require('fs').promises
+const Stellar = require('stellar-sdk')
+
+Stellar.Network.useTestNetwork()
+
+const server = new Stellar.Server('https://horizon-testnet.stellar.org')
+const [pairA, pairB] = require('../pairs.json')
+
+const createTransaction = async (pairA, pairB) => {
+
+    const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+
+    const accountA = await server.loadAccount(pairA.publicKey)
+
+    let transaction = new Stellar.TransactionBuilder(accountA)
+        .addOperation(Stellar.Operation.setOptions({
+            masterWeight: 1, // account A has a weight of 1
+            lowThreshold: 2, // 2 signatures minimum
+            medThreshold: 2, // 2 signatures minimum
+            highThreshold: 2, // 2 signatures maximum
+            signer: {
+                ed25519PublicKey: pairB.publicKey, // Account B has to sign as well
+                weight: 1
+            }
+        }))
+        .build();
+
+    transaction.sign(KeypairA) // account A signs the transaction
+
+    const envelope = transaction.toEnvelope()
+
+    return envelope.toXDR('base64') // buffer
+
+}
+
+createTransaction(pairA, pairB)
+    .then(async (TxEnvelopeXDR) => {
+        await fs.writeFile('transactionSignedByA.txt', TxEnvelopeXDR, { encoding: 'base64' })
+    })
+    .catch((e) => { console.error(e); throw e})

@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+
+const fs = require('fs').promises
+const Buffer = require('buffer').Buffer
+const Stellar = require('stellar-sdk')
+
+Stellar.Network.useTestNetwork()
+
+const server = new Stellar.Server('https://horizon-testnet.stellar.org')
+const [, pairB] = require('../pairs.json')
+
+const accountBSigns = async (pairB) => {
+
+    const txEnveloperXdr = await fs.readFile('./transactionSignedByA.txt', { encoding: 'base64' })
+
+    const buffer = Buffer.from(txEnveloperXdr, 'base64')
+
+    const envelope = Stellar.xdr.TransactionEnvelope.fromXDR(buffer, 'base64')
+
+    const transaction = new Stellar.Transaction(envelope)
+
+    const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
+
+    transaction.sign(KeypairB) // account B signs the transaction
+
+    try {
+
+        await server.submitTransaction(transaction)
+
+    } catch (e) {
+
+        console.log(e.response.data.extras.result_codes);
+
+    }
+
+}
+
+accountBSigns(pairB)
+    .then(() => console.log('ok'))
+    .catch((e) => { })
