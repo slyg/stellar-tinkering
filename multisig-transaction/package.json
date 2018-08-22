@@ -1,5 +1,5 @@
 {
-  "name": "multi-sig-transaction",
+  "name": "multisig-transaction",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
