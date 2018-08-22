@@ -19,22 +19,19 @@ const accountBSigns = async (pairB) => {
 
     const transaction = new Stellar.Transaction(envelope)
 
-    // const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
+    const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
 
-    // transaction.sign(KeypairB) // account B signs the transaction
+    transaction.sign(KeypairB) // account B signs the transaction
 
     try {
-
         await server.submitTransaction(transaction)
-
     } catch (e) {
-
         console.log(e.response.data.extras.result_codes);
-
+        throw e
     }
 
 }
 
 accountBSigns(pairB)
     .then(() => console.log('ok'))
-    .catch((e) => { })
+    .catch((e) => { console.log(e); throw e })

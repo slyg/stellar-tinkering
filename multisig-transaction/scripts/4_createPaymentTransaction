@@ -10,7 +10,6 @@ const [pairA, pairB] = require('../pairs.json')
 const createTransaction = async (pairA, pairB) => {
 
     const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
-    const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
 
     const accountA = await server.loadAccount(pairA.publicKey)
 
@@ -25,7 +24,6 @@ const createTransaction = async (pairA, pairB) => {
         .build();
 
     transaction.sign(KeypairA) // account A signs the transaction
-    transaction.sign(KeypairB) // account B signs the transaction
 
     const envelope = transaction.toEnvelope()
 
