@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 
 const axios = require('axios')
-const Stellar = require('stellar-sdk')
 const pairs = require('../pairs.json')
-
-Stellar.Network.useTestNetwork()
+const { SERVER_URL } = require('./lib/sdk')
 
 const fundAccounts = async (pairs) => await Promise.all(
     pairs.map(
         async (pair) => await axios.get('/friendbot', {
-            baseURL: 'https://horizon-testnet.stellar.org/',
+            baseURL: SERVER_URL,
             params: { addr: pair.publicKey }
         })
     )

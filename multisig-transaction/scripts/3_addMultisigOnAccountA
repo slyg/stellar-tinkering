@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs').promises
-const Stellar = require('stellar-sdk')
+const { Stellar, server } = require('./lib/sdk')
 
-Stellar.Network.useTestNetwork()
-
-const server = new Stellar.Server('https://horizon-testnet.stellar.org')
 const [pairA, pairB] = require('../pairs.json')
 
 const addMultisigOnAccountA = async (pairA, pairB) => {

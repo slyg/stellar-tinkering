@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs')
-const Stellar = require('stellar-sdk')
-
-Stellar.Network.useTestNetwork()
+const { Stellar } = require('./lib/sdk')
 
 fs.writeFileSync(
     "pairs.json",

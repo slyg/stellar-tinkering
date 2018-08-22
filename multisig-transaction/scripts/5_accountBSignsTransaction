@@ -2,11 +2,7 @@
 
 const fs = require('fs').promises
 const Buffer = require('buffer').Buffer
-const Stellar = require('stellar-sdk')
-
-Stellar.Network.useTestNetwork()
-
-const server = new Stellar.Server('https://horizon-testnet.stellar.org')
+const { Stellar, server } = require('./lib/sdk')
 const [, pairB] = require('../pairs.json')
 
 const accountBSigns = async (pairB) => {

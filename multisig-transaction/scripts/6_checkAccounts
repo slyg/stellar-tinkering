@@ -1,12 +1,8 @@
 #!/usr/bin/env node
 
-const Stellar = require('stellar-sdk')
 const util = require('util')
 const pairs = require('../pairs.json')
-
-const server = new Stellar.Server('https://horizon-testnet.stellar.org')
-
-Stellar.Network.useTestNetwork()
+const { server } = require('./lib/sdk')
 
 const checkAccounts = async pairs => {
 
