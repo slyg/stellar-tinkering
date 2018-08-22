@@ -19,9 +19,9 @@ const accountBSigns = async (pairB) => {
 
     const transaction = new Stellar.Transaction(envelope)
 
-    const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
+    // const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
 
-    transaction.sign(KeypairB) // account B signs the transaction
+    // transaction.sign(KeypairB) // account B signs the transaction
 
     try {
 

@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+const fs = require('fs').promises
+const Stellar = require('stellar-sdk')
+
+Stellar.Network.useTestNetwork()
+
+const server = new Stellar.Server('https://horizon-testnet.stellar.org')
+const [pairA, pairB] = require('../pairs.json')
+
+const addMultisigOnAccountA = async (pairA, pairB) => {
+
+    const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+
+    const accountA = await server.loadAccount(pairA.publicKey)
+
+    const thresholds = {
+        masterWeight: 1, // account A has a weight of 1
+        lowThreshold: 1,
+        medThreshold: 2, // payment is medium threshold
+        highThreshold: 2, // make sure to have enough weight to add up to the high threshold!
+    }
+
+    const extraSigner = {
+        signer: {
+            ed25519PublicKey: pairB.publicKey, // Account B has to sign as well
+            weight: 1 // with a weight of 1
+        }
+    }
+
+    let transaction = new Stellar.TransactionBuilder(accountA)
+        .addOperation(Stellar.Operation.setOptions(thresholds))
+        .addOperation(Stellar.Operation.setOptions(extraSigner))
+        .build()
+
+    transaction.sign(KeypairA)
+
+    try {
+        await server.submitTransaction(transaction)
+    } catch (e) {
+        console.log(e.response.data.extras.result_codes);
+        throw e
+    }
+
+}
+
+addMultisigOnAccountA(pairA, pairB)
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.error(e); throw e})

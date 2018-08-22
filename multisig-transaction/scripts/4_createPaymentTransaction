@@ -10,32 +10,31 @@ const [pairA, pairB] = require('../pairs.json')
 const createTransaction = async (pairA, pairB) => {
 
     const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+    const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed)
 
     const accountA = await server.loadAccount(pairA.publicKey)
 
+    const paymentToB = {
+        destination: pairB.publicKey,
+        asset: Stellar.Asset.native(),
+        amount: '20.0000000',
+    }
+
     let transaction = new Stellar.TransactionBuilder(accountA)
-        .addOperation(Stellar.Operation.setOptions({
-            masterWeight: 1, // account A has a weight of 1
-            lowThreshold: 2, // 2 signatures minimum
-            medThreshold: 2, // 2 signatures minimum
-            highThreshold: 2, // 2 signatures maximum
-            signer: {
-                ed25519PublicKey: pairB.publicKey, // Account B has to sign as well
-                weight: 1
-            }
-        }))
+        .addOperation(Stellar.Operation.payment(paymentToB))
         .build();
 
     transaction.sign(KeypairA) // account A signs the transaction
+    transaction.sign(KeypairB) // account B signs the transaction
 
     const envelope = transaction.toEnvelope()
 
-    return envelope.toXDR('base64') // buffer
+    const txEnvelopeXDR = envelope.toXDR('base64') // buffer
+
+    await fs.writeFile('transactionSignedByA.txt', txEnvelopeXDR, { encoding: 'base64' })
 
 }
 
 createTransaction(pairA, pairB)
-    .then(async (TxEnvelopeXDR) => {
-        await fs.writeFile('transactionSignedByA.txt', TxEnvelopeXDR, { encoding: 'base64' })
-    })
+    .then(() => { console.log('ok') })
     .catch((e) => { console.error(e); throw e})
