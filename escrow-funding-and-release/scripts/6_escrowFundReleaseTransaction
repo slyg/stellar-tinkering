@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+const fs = require('fs').promises
+const { Stellar, server } = require('./lib/sdk')
+const [escrowPair, _, pairB] = require('../pairs.json')
+
+const releaseFundsToB = async (escrowPair, pairB) => {
+
+    const escrowAccount =  await server.loadAccount(escrowPair.publicKey)
+
+    const paymentToAccountB = {
+        destination: pairB.publicKey,
+        asset: Stellar.Asset.native(),
+        amount: '10.0000000',
+    }
+
+    const memo = Stellar.Memo.text("Release Funds to Account B")
+
+    let transaction = new Stellar.TransactionBuilder(escrowAccount, { memo })
+        .addOperation(Stellar.Operation.payment(paymentToAccountB))
+        .build();
+
+    const txEnvelopeXDR =  transaction.toEnvelope().toXDR('base64')
+
+    await fs.writeFile('fundsReleaseTx.txt', txEnvelopeXDR, { encoding: 'base64' })
+
+}
+
+releaseFundsToB(escrowPair, pairB)
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.error(e); throw e})

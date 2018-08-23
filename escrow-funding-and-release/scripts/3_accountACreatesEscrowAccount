@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+const fs = require('fs').promises
+const { Stellar, server } = require('./lib/sdk')
+
+const [escrowPair, pairA, pairB] = require('../pairs.json')
+
+const addMultisigOnAccountA = async (pairA, pairB) => {
+
+    const keypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+
+    const accountA = await server.loadAccount(pairA.publicKey)
+
+    const escrowAccountConfig = {
+        destination: escrowPair.publicKey,
+        startingBalance: '2.5000000'
+    }
+
+    let transaction = new Stellar.TransactionBuilder(accountA)
+        .addOperation(Stellar.Operation.createAccount(escrowAccountConfig))
+        .build()
+
+    transaction.sign(keypairA)
+
+    try {
+        await server.submitTransaction(transaction)
+    } catch (e) {
+        console.log(e.response.data.extras.result_codes);
+        throw e
+    }
+
+}
+
+addMultisigOnAccountA(pairA, pairB)
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.error(e); throw e})

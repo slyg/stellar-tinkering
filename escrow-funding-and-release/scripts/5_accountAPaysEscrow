@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+const fs = require('fs').promises
+const { Stellar, server } = require('./lib/sdk')
+const [escrowPair, pairA] = require('../pairs.json')
+
+const payEscrow = async (escrowPair, pairA) => {
+
+    const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+
+    const accountA = await server.loadAccount(pairA.publicKey)
+
+    const paymentToEscrow = {
+        destination: escrowPair.publicKey,
+        asset: Stellar.Asset.native(),
+        amount: '10.0000000',
+    }
+
+    const memo = Stellar.Memo.text("Funding the escrow account")
+
+    let transaction = new Stellar.TransactionBuilder(accountA, { memo })
+        .addOperation(Stellar.Operation.payment(paymentToEscrow))
+        .build();
+
+    transaction.sign(KeypairA) // account A signs the transaction
+
+    try {
+        await server.submitTransaction(transaction)
+    } catch (e) {
+        console.log(e.response.data.extras.result_codes);
+        throw e
+    }
+
+}
+
+payEscrow(escrowPair, pairA)
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.error(e); throw e})

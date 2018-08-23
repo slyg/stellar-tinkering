@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+const fs = require('fs').promises
+const { Stellar } = require('./lib/sdk')
+const [, pairA] = require('../pairs.json')
+
+const releaseFundsToB = async (pairA) => {
+
+    const fundsReleaseTx = await fs.readFile('./fundsReleaseTx.txt', { encoding: 'base64' })
+
+    const buffer = Buffer.from(fundsReleaseTx, 'base64')
+
+    const envelope = Stellar.xdr.TransactionEnvelope.fromXDR(buffer, 'base64')
+
+    const transaction = new Stellar.Transaction(envelope)
+
+    const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+
+    transaction.sign(KeypairA)
+
+    const txEnvelopeXDR = transaction.toEnvelope().toXDR('base64')
+
+    await fs.writeFile('fundsReleaseSignedByATx.txt', txEnvelopeXDR, { encoding: 'base64' })
+
+}
+
+releaseFundsToB(pairA)
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.error(e); throw e})
