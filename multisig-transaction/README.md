@@ -9,7 +9,7 @@
 ### 3. Account A changes itself such as :
 
 - It needs 2 signatures for payments
-- It needs the 2<sup>nd</sup> signee to be Account B
+- It needs the 2<sup>nd</sup> signer to be Account B
 
 Submit this change to the network.
 
@@ -22,8 +22,8 @@ Submit this change to the network.
 
 > NB:
 >
-> - At this stage, the transaction is not submitted to the network, as it would be invalid (not signed by all signees).
-> - The objective of saving the transaction as a file illustrates a real usecase where signees are not co-located and may act in different times.
+> - At this stage, the transaction is not submitted to the network, as it would be invalid (not signed by all signers).
+> - The objective of saving the transaction as a file illustrates a real usecase where signers are not co-located and may act in different times and on different devices.
 
 ### 5. Account B signs and submits the payment transaction
 
