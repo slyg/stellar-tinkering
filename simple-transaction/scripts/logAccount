@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var StellarSdk = require('stellar-sdk')
 const pairs = require('../pairs.json')
 
