@@ -3,7 +3,7 @@ const fs = require('fs').promises
 const { Stellar } = require('./lib/sdk')
 const [, pairA] = require('../pairs.json')
 
-const releaseFundsToB = async (pairA) => {
+const accountASignsTx = async (secret) => {
 
     const fundsReleaseTx = await fs.readFile('./fundsReleaseTx.txt', { encoding: 'base64' })
 
@@ -13,7 +13,7 @@ const releaseFundsToB = async (pairA) => {
 
     const transaction = new Stellar.Transaction(envelope)
 
-    const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+    const KeypairA = Stellar.Keypair.fromSecret(secret)
 
     transaction.sign(KeypairA)
 
@@ -23,6 +23,6 @@ const releaseFundsToB = async (pairA) => {
 
 }
 
-releaseFundsToB(pairA)
+accountASignsTx(pairA.secretSeed)
     .then(() => { console.log('ok') })
     .catch((e) => { console.error(e); throw e})

@@ -3,12 +3,12 @@ const fs = require('fs').promises
 const { Stellar, server } = require('./lib/sdk')
 const [escrowPair, _, pairB] = require('../pairs.json')
 
-const releaseFundsToB = async (escrowPair, pairB) => {
+const releaseFundsToB = async (escrowPublicKey, pairBPublicKey) => {
 
-    const escrowAccount =  await server.loadAccount(escrowPair.publicKey)
+    const escrowAccount =  await server.loadAccount(escrowPublicKey)
 
     const paymentToAccountB = {
-        destination: pairB.publicKey,
+        destination: pairBPublicKey,
         asset: Stellar.Asset.native(),
         amount: '10.0000000',
     }
@@ -25,6 +25,6 @@ const releaseFundsToB = async (escrowPair, pairB) => {
 
 }
 
-releaseFundsToB(escrowPair, pairB)
+releaseFundsToB(escrowPair.publicKey, pairB.publicKey)
     .then(() => { console.log('ok') })
     .catch((e) => { console.error(e); throw e})

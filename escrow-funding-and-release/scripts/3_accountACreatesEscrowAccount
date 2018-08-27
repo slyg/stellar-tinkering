@@ -2,16 +2,16 @@
 const fs = require('fs').promises
 const { Stellar, server } = require('./lib/sdk')
 
-const [escrowPair, pairA, pairB] = require('../pairs.json')
+const [escrowPair, pairA,] = require('../pairs.json')
 
-const addMultisigOnAccountA = async (pairA, pairB) => {
+const addMultisigOnAccountA = async (pairA, escrowPublicKey) => {
 
     const keypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
 
     const accountA = await server.loadAccount(pairA.publicKey)
 
     const escrowAccountConfig = {
-        destination: escrowPair.publicKey,
+        destination: escrowPublicKey,
         startingBalance: '2.5000000'
     }
 
@@ -30,6 +30,6 @@ const addMultisigOnAccountA = async (pairA, pairB) => {
 
 }
 
-addMultisigOnAccountA(pairA, pairB)
+addMultisigOnAccountA(pairA, escrowPair.publicKey)
     .then(() => { console.log('ok') })
     .catch((e) => { console.error(e); throw e})

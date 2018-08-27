@@ -4,7 +4,7 @@ const { Stellar, server } = require('./lib/sdk')
 
 const [escrowPair, pairA, pairB] = require('../pairs.json')
 
-const setEscrowMultisig = async (pairA, pairB) => {
+const setEscrowMultisig = async (escrowPair, pairAPublicKey, pairBPublicKey) => {
 
     const escrowKeyPair = Stellar.Keypair.fromSecret(escrowPair.secretSeed)
 
@@ -19,14 +19,14 @@ const setEscrowMultisig = async (pairA, pairB) => {
 
     const extraSignerA = {
         signer: {
-            ed25519PublicKey: pairA.publicKey,
+            ed25519PublicKey: pairAPublicKey,
             weight: 1,
         }
     }
 
     const extraSignerB = {
         signer: {
-            ed25519PublicKey: pairB.publicKey,
+            ed25519PublicKey: pairBPublicKey,
             weight: 1,
         }
     }
@@ -48,6 +48,6 @@ const setEscrowMultisig = async (pairA, pairB) => {
 
 }
 
-setEscrowMultisig(pairA, pairB)
+setEscrowMultisig(escrowPair, pairA.publicKey, pairB.publicKey)
     .then(() => { console.log('ok') })
     .catch((e) => { console.error(e); throw e})
