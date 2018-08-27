@@ -44,6 +44,6 @@ Alice loads the transaction, signs it, and saves it as base64 binary file.
 
 ### 8. Bob signs and submits the transaction
 
-Alice loads the transaction, signs it, and submits it to the network.
+Bob loads the transaction, signs it, and submits it to the network.
 
 ### 9. Verify accounts balances
