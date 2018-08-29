@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+const { Stellar, server } = require('./lib/sdk')
+
+const { rootAccountPair, issuingAccountPair } = require('../pairs.json')
+
+const main = async () => {
+
+    const rootAccount = await server.loadAccount(rootAccountPair.publicKey)
+
+    const sylAsset = new Stellar.Asset('SYL', issuingAccountPair.publicKey)
+
+    const changeTrustOpts = {
+        asset: sylAsset,
+    }
+
+    const manageOfferOpts = {
+        selling: Stellar.Asset.native(),
+        buying: sylAsset,
+        amount: '1.00000000',
+        price: '1.00000000'
+    }
+
+    let transaction = new Stellar.TransactionBuilder(rootAccount)
+        .addOperation(Stellar.Operation.changeTrust(changeTrustOpts))
+        .addOperation(Stellar.Operation.manageOffer(manageOfferOpts))
+        .build()
+
+    transaction.sign(Stellar.Keypair.fromSecret(rootAccountPair.secretSeed))
+
+    try {
+        await server.submitTransaction(transaction)
+    } catch (e) {
+        console.log(e.response.data.extras.result_codes);
+        throw e
+    }
+
+}
+
+main()
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.error(e); throw e})
