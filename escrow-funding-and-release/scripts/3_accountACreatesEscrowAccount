@@ -4,7 +4,7 @@ const { Stellar, server } = require('./lib/sdk')
 
 const [escrowPair, pairA,] = require('../pairs.json')
 
-const addMultisigOnAccountA = async (pairA, escrowPublicKey) => {
+const main = async (pairA, escrowPublicKey) => {
 
     const keypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
 
@@ -30,6 +30,6 @@ const addMultisigOnAccountA = async (pairA, escrowPublicKey) => {
 
 }
 
-addMultisigOnAccountA(pairA, escrowPair.publicKey)
+main(pairA, escrowPair.publicKey)
     .then(() => { console.log('ok') })
     .catch((e) => { console.error(e); throw e})
