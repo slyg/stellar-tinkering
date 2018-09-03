@@ -6,7 +6,7 @@ const { Stellar } = require('./lib/sdk')
 fs.writeFileSync(
     "pairs.json",
     JSON.stringify(
-        ['escrowPair', 'pairA', 'PairB'].map(() => {
+        ['escrowPair', 'pairA', 'pairB'].map(() => {
             const pair = Stellar.Keypair.random()
             return {
                 secretSeed: pair.secret(),
