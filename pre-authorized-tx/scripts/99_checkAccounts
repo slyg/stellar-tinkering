@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+const util = require('util')
+const pairs = require('../pairs.json')
+const { server } = require('./lib/sdk')
+
+const checkAccounts = async () => {
+
+    const accounts = await Promise.all(
+        ['alicePair', 'bobPair', 'escrowPair'].map( async (ref) => 
+            ({
+                ...await server.loadAccount(pairs[ref].publicKey),
+                _accountName: ref
+            })
+        )
+    )
+
+    return accounts.map(account => ({
+        name: account._accountName,
+        sequence: account.sequence,
+        accountId: account.id,
+        balances: account.balances.map( balance => 
+            `${balance.balance} ${balance.asset_type === 'native' ? 'XLM' : balance.asset_code}`
+        )
+    }))
+
+}
+
+checkAccounts()
+    .then((accounts) => console.log(util.inspect(accounts, false, null)))
+    .catch((e) => { console.error(e); throw e})
