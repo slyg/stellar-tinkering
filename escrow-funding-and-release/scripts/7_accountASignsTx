@@ -5,7 +5,7 @@ const [, pairA] = require('../pairs.json')
 
 const accountASignsTx = async (secret) => {
 
-    const fundsReleaseTx = await fs.readFile('./fundsReleaseTx.txt', { encoding: 'base64' })
+    const fundsReleaseTx = await fs.readFile('./fundsReleaseTx.x', { encoding: 'base64' })
 
     const buffer = Buffer.from(fundsReleaseTx, 'base64')
 
@@ -19,7 +19,7 @@ const accountASignsTx = async (secret) => {
 
     const txEnvelopeXDR = transaction.toEnvelope().toXDR('base64')
 
-    await fs.writeFile('fundsReleaseSignedByATx.txt', txEnvelopeXDR, { encoding: 'base64' })
+    await fs.writeFile('fundsReleaseSignedByATx.x', txEnvelopeXDR, { encoding: 'base64' })
 
 }
 

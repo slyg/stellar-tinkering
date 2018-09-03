@@ -21,7 +21,7 @@ const releaseFundsToB = async (escrowPublicKey, pairBPublicKey) => {
 
     const txEnvelopeXDR =  transaction.toEnvelope().toXDR('base64')
 
-    await fs.writeFile('fundsReleaseTx.txt', txEnvelopeXDR, { encoding: 'base64' })
+    await fs.writeFile('fundsReleaseTx.x', txEnvelopeXDR, { encoding: 'base64' })
 
 }
 

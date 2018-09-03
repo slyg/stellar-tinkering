@@ -5,7 +5,7 @@ const [,, pairB] = require('../pairs.json')
 
 const releaseFundsToB = async (secret) => {
 
-    const fundsReleaseTx = await fs.readFile('./fundsReleaseSignedByATx.txt', { encoding: 'base64' })
+    const fundsReleaseTx = await fs.readFile('./fundsReleaseSignedByATx.x', { encoding: 'base64' })
 
     const buffer = Buffer.from(fundsReleaseTx, 'base64')
 
