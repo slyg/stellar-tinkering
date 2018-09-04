@@ -36,7 +36,7 @@ Even though this could have been done at step no 3. But I separated the funding 
 
 ### 6. Create the fund release transaction
 
-A transaction of _N_ XLM is created (but not signed) then saved as base64 binary file.
+A transaction of _N_ XLM is created (but not signed) then saved as base64 binary file. This is a time-bound transaction.
 
 ### 7. Alice signs the transaction 
 

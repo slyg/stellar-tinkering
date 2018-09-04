@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const fs = require('fs').promises
+const { BigNumber } = require('bignumber.js')
 const { Stellar, server } = require('./lib/sdk')
 const [escrowPair, _, pairB] = require('../pairs.json')
 
@@ -13,9 +14,18 @@ const releaseFundsToB = async (escrowPublicKey, pairBPublicKey) => {
         amount: '10.0000000',
     }
 
-    const memo = Stellar.Memo.text("Release Funds to Account B")
+    const now = new BigNumber( Math.floor(Date.now()) ).dividedToIntegerBy(1000)
 
-    let transaction = new Stellar.TransactionBuilder(escrowAccount, { memo })
+    // Block transaction for the next 5 minutes and then for 1h
+    const txOptions = {
+        timebounds: {
+            minTime: now.plus(300).toNumber(), // 5 min from now
+            maxTime: now.plus(3600 + 300).toNumber(), // then 1h
+        },
+        memo: Stellar.Memo.text("Release Funds to Account B")
+    }
+
+    let transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
         .addOperation(Stellar.Operation.payment(paymentToAccountB))
         .build();
 
