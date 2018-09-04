@@ -3,6 +3,9 @@
 const { Stellar, server } = require('./lib/sdk')
 const { escrowPair, alicePair } = require('../pairs.json')
 
+const baseReserve = 0.5
+const numberOfEntries = 3
+
 const createEscrow = async (alicePair, escrowPublicKey) => {
 
     const aliceAccount = await server.loadAccount(alicePair.publicKey)
@@ -11,7 +14,7 @@ const createEscrow = async (alicePair, escrowPublicKey) => {
     const transaction = new Stellar.TransactionBuilder(aliceAccount)
         .addOperation(Stellar.Operation.createAccount({
             destination: escrowPublicKey,
-            startingBalance: '2.5000000 '
+            startingBalance: new Number((2 + numberOfEntries) * baseReserve).toString()
         }))
         .build()
         
