@@ -4,19 +4,29 @@ const util = require('util')
 const pairs = require('../pairs.json')
 const { server } = require('./lib/sdk')
 
+const accountExists = (accountResponse => accountResponse instanceof Error ? false : true)
+
 const checkAccounts = async pairs => {
 
     const accounts = await Promise.all(
-        pairs.map( async (pair) => await server.loadAccount(pair.publicKey) )
+        pairs.map( async (pair) => {
+            try {
+                return await server.loadAccount(pair.publicKey)
+            } catch (e) {
+                return e
+            }
+        })
     )
 
-    return accounts.map(account => ({
-        accountId: account.id,
-        balances: account.balances.map( balance => ({
-            type: balance.asset_type,
-            balance: balance.balance
+    return accounts
+        .filter(accountExists)
+        .map(account => ({
+            accountId: account.id,
+            balances: account.balances.map( balance => ({
+                type: balance.asset_type,
+                balance: balance.balance
+            }))
         }))
-    }))
 
 }
 
