@@ -22,7 +22,7 @@ const createProceedTx = async () => {
         escrowAccountSequence.plus(1).valueOf()
     )
 
-    // Block transaction for the next 5 minutes and then for 1h
+    // Authorize transaction after 5 minutes and then for 5 minutes
     const txOptions = {
         timebounds: {
             minTime: lockPeriod.toNumber(),
@@ -56,7 +56,7 @@ const createRecoverTx = async () => {
         escrowAccountSequence.plus(1).valueOf()
     )
 
-    // Block transaction for the next 5 minutes and then for 1h
+    // Authorize transaction after 10 minutes
     const txOptions = {
         timebounds: {
             minTime: recoverPeriod.toNumber(),
