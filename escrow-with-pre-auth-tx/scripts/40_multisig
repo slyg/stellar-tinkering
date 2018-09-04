@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+
+const { BigNumber } = require('bignumber.js')
+const { Stellar, server } = require('./lib/sdk')
+const { loadTx } = require('./lib/txUtils')
+const { escrowPair, alicePair, bobPair } = require('../pairs.json')
+
+const multisig = async () => {
+
+    const [ proceedTx, recoverTx ] = await Promise.all([
+        loadTx('./proceedT.x'), loadTx('./recoverT.x')
+    ])
+
+    const escrowAccount = await server.loadAccount(escrowPair.publicKey)
+
+    const transaction = new Stellar.TransactionBuilder(escrowAccount)
+        .addOperation(Stellar.Operation.setOptions({
+            signer: {
+                preAuthTx: proceedTx.hash(),
+                weight: 1,
+            },
+        }))
+        .addOperation(Stellar.Operation.setOptions({
+            signer: {
+                preAuthTx: recoverTx.hash(),
+                weight: 1,
+            },
+        }))
+        .addOperation(Stellar.Operation.setOptions({
+            masterWeight: 0,
+            lowThreshold: 1,
+            medThreshold: 1,
+            highThreshold: 1,
+        }))
+        .build()
+        
+    transaction.sign(Stellar.Keypair.fromSecret(escrowPair.secretSeed))
+
+    await server.submitTransaction(transaction)
+
+}
+
+multisig()
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); throw e})

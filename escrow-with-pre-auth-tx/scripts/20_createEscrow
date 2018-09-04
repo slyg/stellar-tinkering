@@ -11,7 +11,7 @@ const createEscrow = async (alicePair, escrowPublicKey) => {
     const transaction = new Stellar.TransactionBuilder(aliceAccount)
         .addOperation(Stellar.Operation.createAccount({
             destination: escrowPublicKey,
-            startingBalance: '20.5000000 '
+            startingBalance: '2.5000000 '
         }))
         .build()
         
