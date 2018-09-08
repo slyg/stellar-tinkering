@@ -4,7 +4,7 @@ const { Stellar, server } = require('./lib/sdk')
 const { escrowPair, alicePair } = require('../pairs.json')
 
 const baseReserve = 0.5
-const numberOfEntries = 4
+const numberOfEntries = 5
 
 const createEscrow = async (alicePair, escrowPublicKey) => {
 
