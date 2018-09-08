@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+
+const fs = require('fs')
+const { Stellar } = require('./lib/sdk')
+
+const toPairs = (acc, name) => {
+    const pair = Stellar.Keypair.random()
+    return {
+        ...acc,
+        [name]: {
+            secretSeed: pair.secret(),
+            publicKey: pair.publicKey(),
+        }
+    }
+}
+
+const pairs = ['alicePair', 'bobPair', 'escrowPair', 'mediatorPair'].reduce(toPairs, {})
+
+fs.writeFileSync(
+    "pairs.json",
+    JSON.stringify(pairs, null, 2)
+)

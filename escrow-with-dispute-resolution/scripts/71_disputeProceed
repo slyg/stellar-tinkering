@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+
+const { Stellar, server } = require('./lib/sdk')
+const { escrowPair, alicePair, bobPair, mediatorPair } = require('../pairs.json')
+
+const disputeRecover = async () => {
+
+    const escrowAccount = await server.loadAccount(escrowPair.publicKey)
+
+    const paymentToBob = {
+        destination: bobPair.publicKey,
+        asset: Stellar.Asset.native(),
+        amount: '100.00000000',
+    }
+
+    const transaction = new Stellar.TransactionBuilder(escrowAccount)
+        .addOperation(Stellar.Operation.payment(paymentToBob))
+        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
+        .build()
+
+    transaction.sign(Stellar.Keypair.fromSecret(mediatorPair.secretSeed))
+
+    await server.submitTransaction(transaction)
+}
+
+disputeRecover()
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); process.exit(1);})

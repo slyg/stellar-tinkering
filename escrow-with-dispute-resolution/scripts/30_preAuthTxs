@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+
+const { BigNumber } = require('bignumber.js')
+const { saveTx } = require('./lib/txUtils')
+const { Stellar, server } = require('./lib/sdk')
+const { escrowPair, alicePair, bobPair, mediatorPair } = require('../pairs.json')
+
+const fiveMin = 30
+const tenMin = 60
+const fifteenMin = 90
+const now = new BigNumber( Math.floor(Date.now()) ).dividedToIntegerBy(1000)
+const disputePeriodStart = now.plus(fiveMin)
+const disputePeriodEnd = now.plus(tenMin)
+const lockPeriodEnd = now.plus(tenMin)
+const recoverPeriodStart = now.plus(fifteenMin)
+
+const createProceedTx = async (escrowAccountCurrentSequence) => {
+
+    const escrowAccount = new Stellar.Account(
+        escrowPair.publicKey,
+        escrowAccountCurrentSequence.plus(1).valueOf()
+    )
+
+    const txOptions = {
+        timebounds: {
+            minTime: lockPeriodEnd.toNumber(),
+            maxTime: 0,
+        }
+    }
+
+    const paymentToBob = {
+        destination: bobPair.publicKey,
+        asset: Stellar.Asset.native(),
+        amount: '100.00000000',
+    }
+
+    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+        .addOperation(Stellar.Operation.payment(paymentToBob))
+        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
+        .build()
+
+    return transaction
+
+}
+
+const createRecoverTx = async (escrowAccountCurrentSequence) => {
+
+    const escrowAccount = new Stellar.Account(
+        escrowPair.publicKey,
+        escrowAccountCurrentSequence.plus(1).valueOf()
+    )
+
+    const txOptions = {
+        timebounds: {
+            minTime: recoverPeriodStart.toNumber(),
+            maxTime: 0,
+        }
+    }
+
+    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
+        .build()
+
+    return transaction
+
+}
+
+const createDisputeTx = async (escrowAccountCurrentSequence) => {
+
+    const escrowAccount = new Stellar.Account(
+        escrowPair.publicKey,
+        escrowAccountCurrentSequence.plus(1).valueOf()
+    )
+
+    const txOptions = {
+        timebounds: {
+            minTime: disputePeriodStart.toNumber(),
+            maxTime: disputePeriodEnd.toNumber(),
+        }
+    }
+
+    const mediatorSigner = {
+        signer: {
+            ed25519PublicKey: mediatorPair.publicKey, // Mediator takes ownership of the escrow account
+            weight: 1,
+        }
+    }
+
+    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+        .addOperation(Stellar.Operation.setOptions(mediatorSigner))
+        .addOperation(Stellar.Operation.setOptions({
+            masterWeight: 0,
+            lowThreshold: 1,
+            medThreshold: 1,
+            highThreshold: 1,
+        }))
+        .build()
+
+    return transaction
+
+}
+
+const apply = (arg) => (fn) => fn(arg)
+
+const main = async () => {
+
+    const { sequence } = await server.loadAccount(escrowPair.publicKey)
+
+    const escrowAccountCurrentSequence = new BigNumber(sequence)
+
+    const promises = [
+        createProceedTx, createRecoverTx, createDisputeTx
+    ].map(apply(escrowAccountCurrentSequence))
+
+    const [proceedTx, recoverTx, disputeTx] = await Promise.all(promises)
+
+    await Promise.all([
+        saveTx('proceedT.x', proceedTx),
+        saveTx('recoverT.x', recoverTx),
+        saveTx('disputeT.x', disputeTx)
+    ])
+}
+
+main()
+    .then(() => { console.log('ok') })
+    .catch((e) => { console.log(e); throw e})

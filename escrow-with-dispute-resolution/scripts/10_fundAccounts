@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+
+const axios = require('axios')
+const { alicePair, bobPair, mediatorPair } = require('../pairs.json')
+const { SERVER_URL } = require('./lib/sdk')
+
+const fundRootAccounts = async (publicKeys) => Promise.all(
+    publicKeys.map(
+        async (publicKey) => await axios.get('/friendbot', {
+            baseURL: SERVER_URL,
+            params: { addr: publicKey }
+        })
+    )
+)
+
+fundRootAccounts([alicePair.publicKey, bobPair.publicKey, mediatorPair.publicKey])
+    .then(() => console.log('ok'))
+    .catch((e) => { console.error(e); throw e})
