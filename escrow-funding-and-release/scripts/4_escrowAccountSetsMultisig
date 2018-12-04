@@ -12,7 +12,7 @@ const setEscrowMultisig = async (escrowPair, pairAPublicKey, pairBPublicKey) => 
 
     const thresholds = {
         masterWeight: 0, // Escrow account has a weight of 0, no rights :)
-        lowThreshold: 1,
+        lowThreshold: 2,
         medThreshold: 2, // payment is medium threshold
         highThreshold: 2,
     }
