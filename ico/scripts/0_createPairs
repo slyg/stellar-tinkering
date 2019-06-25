@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 
-const fs = require('fs')
-const { Stellar } = require('./lib/sdk')
+const fs = require("fs");
+const { Stellar } = require("./lib/sdk");
 
 const reducer = (acc, name) => {
-    const pair = Stellar.Keypair.random()
-    return {
-        ...acc,
-        [name]: {
-            secretSeed: pair.secret(),
-            publicKey: pair.publicKey(),
-        }
+  const pair = Stellar.Keypair.random();
+  return {
+    ...acc,
+    [name]: {
+      secretSeed: pair.secret(),
+      publicKey: pair.publicKey()
     }
-}
+  };
+};
 
-const pairs = ['issuingAccountPair', 'distributionAccountPair', 'rootAccountPair'].reduce(reducer, {})
+const pairs = [
+  "issuingAccountPair",
+  "distributionAccountPair",
+  "rootAccountPair"
+].reduce(reducer, {});
 
-fs.writeFileSync(
-    "pairs.json",
-    JSON.stringify(pairs, null, 2)
-)
+fs.writeFileSync("pairs.json", JSON.stringify(pairs, null, 2));

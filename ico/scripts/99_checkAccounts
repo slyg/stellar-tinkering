@@ -1,24 +1,34 @@
 #!/usr/bin/env node
 
-const util = require('util')
-const { issuingAccountPair, distributionAccountPair, rootAccountPair } = require('../pairs.json')
-const { server } = require('./lib/sdk')
+const util = require("util");
+const {
+  issuingAccountPair,
+  distributionAccountPair,
+  rootAccountPair
+} = require("../pairs.json");
+const { server } = require("./lib/sdk");
 
 const checkAccounts = async () => {
-
-    const accounts = await Promise.all(
-        [issuingAccountPair, distributionAccountPair, rootAccountPair].map( async ({publicKey}) => await server.loadAccount(publicKey) )
+  const accounts = await Promise.all(
+    [issuingAccountPair, distributionAccountPair, rootAccountPair].map(
+      async ({ publicKey }) => await server.loadAccount(publicKey)
     )
+  );
 
-    return accounts.map(account => ({
-        accountId: account.id,
-        balances: account.balances.map( balance => 
-            `${balance.balance} ${balance.asset_type === 'native' ? 'XLM' : balance.asset_code}`
-        )
-    }))
-
-}
+  return accounts.map(account => ({
+    accountId: account.id,
+    balances: account.balances.map(
+      balance =>
+        `${balance.balance} ${
+          balance.asset_type === "native" ? "XLM" : balance.asset_code
+        }`
+    )
+  }));
+};
 
 checkAccounts()
-    .then((accounts) => console.log(util.inspect(accounts, false, null)))
-    .catch((e) => { console.error(e); throw e})
+  .then(accounts => console.log(util.inspect(accounts, false, null)))
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

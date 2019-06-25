@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 
-const { loadTx } = require('./lib/txUtils')
-const { Stellar , server } = require('./lib/sdk')
-const { mediatorPair } = require('../pairs.json')
+const { loadTx } = require("./lib/txUtils");
+const { Stellar, server } = require("./lib/sdk");
+const { mediatorPair } = require("../pairs.json");
 
 const disputeProceed = async () => {
-    const disputeProceedTx = await loadTx('./disputeProceedT.x')
-    disputeProceedTx.sign(Stellar.Keypair.fromSecret(mediatorPair.secretSeed))
-    await server.submitTransaction(disputeProceedTx)
-}
+  const disputeProceedTx = await loadTx("./disputeProceedT.x");
+  disputeProceedTx.sign(Stellar.Keypair.fromSecret(mediatorPair.secretSeed));
+  await server.submitTransaction(disputeProceedTx);
+};
 
 disputeProceed()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); process.exit(1);})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e.response ? e.response.data.extras.result_codes : e);
+    process.exit(1);
+  });

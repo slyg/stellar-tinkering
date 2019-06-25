@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 
-const { loadTx } = require('./lib/txUtils')
-const { server } = require('./lib/sdk')
+const { loadTx } = require("./lib/txUtils");
+const { server } = require("./lib/sdk");
 
 const proceed = async () => {
-    const proceedTx = await loadTx('./proceedT.x')
-    await server.submitTransaction(proceedTx)
-}
+  const proceedTx = await loadTx("./proceedT.x");
+  await server.submitTransaction(proceedTx);
+};
 
 proceed()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); process.exit(1);})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e.response ? e.response.data.extras.result_codes : e);
+    process.exit(1);
+  });
