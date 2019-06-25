@@ -1,41 +1,52 @@
 #!/usr/bin/env node
-const fs = require('fs').promises
-const { BigNumber } = require('bignumber.js')
-const { Stellar, server } = require('./lib/sdk')
-const [escrowPair, pairA, pairB] = require('../pairs.json')
+const fs = require("fs").promises;
+const { BigNumber } = require("bignumber.js");
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const [escrowPair, pairA, pairB] = require("../pairs.json");
 
-const releaseFundsToB = async (escrowPublicKey, pairAPublicKey, pairBPublicKey) => {
+const releaseFundsToB = async (
+  escrowPublicKey,
+  pairAPublicKey,
+  pairBPublicKey
+) => {
+  const escrowAccount = await server.loadAccount(escrowPublicKey);
 
-    const escrowAccount =  await server.loadAccount(escrowPublicKey)
+  const paymentToAccountB = {
+    destination: pairBPublicKey,
+    asset: Stellar.Asset.native(),
+    amount: "10.0000000"
+  };
 
-    const paymentToAccountB = {
-        destination: pairBPublicKey,
-        asset: Stellar.Asset.native(),
-        amount: '10.0000000',
-    }
+  const now = new BigNumber(Math.floor(Date.now())).dividedToIntegerBy(1000);
 
-    const now = new BigNumber( Math.floor(Date.now()) ).dividedToIntegerBy(1000)
+  // Block transaction for the next 5 minutes and then for 1h
+  const txOptions = {
+    timebounds: {
+      minTime: now.plus(60).toNumber(), // 1 min from now
+      maxTime: 0
+    },
+    fee: await server.fetchBaseFee(),
+    memo: Stellar.Memo.text("Release Funds to Account B")
+  };
 
-    // Block transaction for the next 5 minutes and then for 1h
-    const txOptions = {
-        timebounds: {
-            minTime: now.plus(60).toNumber(), // 1 min from now
-            maxTime: 0,
-        },
-        memo: Stellar.Memo.text("Release Funds to Account B")
-    }
+  let transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(Stellar.Operation.payment(paymentToAccountB))
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: pairAPublicKey })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    let transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
-        .addOperation(Stellar.Operation.payment(paymentToAccountB))
-        .addOperation(Stellar.Operation.accountMerge({ destination: pairAPublicKey }))
-        .build();
+  const txEnvelopeXDR = transaction.toEnvelope().toXDR("base64");
 
-    const txEnvelopeXDR =  transaction.toEnvelope().toXDR('base64')
-
-    await fs.writeFile('fundsReleaseTx.x', txEnvelopeXDR, { encoding: 'base64' })
-
-}
+  await fs.writeFile("fundsReleaseTx.x", txEnvelopeXDR, { encoding: "base64" });
+};
 
 releaseFundsToB(escrowPair.publicKey, pairA.publicKey, pairB.publicKey)
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

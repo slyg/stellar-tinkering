@@ -1,34 +1,52 @@
 #!/usr/bin/env node
-const { Stellar, server } = require('./lib/sdk')
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
 
-const { issuingAccountPair, distributionAccountPair } = require('../pairs.json')
+const {
+  issuingAccountPair,
+  distributionAccountPair
+} = require("../pairs.json");
 
 const main = async () => {
+  const txOptions = {
+    fee: await await server.fetchBaseFee()
+  };
 
-    const distributionAccount = await server.loadAccount(distributionAccountPair.publicKey)
+  const distributionAccount = await server.loadAccount(
+    distributionAccountPair.publicKey
+  );
 
-    const sylAsset = new Stellar.Asset('SYL', issuingAccountPair.publicKey)
+  const sylAsset = new Stellar.Asset("SYL", issuingAccountPair.publicKey);
 
-    const changeTrustOpts = {
-        asset: sylAsset,
-        limit: '1000',
-    }
+  const changeTrustOpts = {
+    asset: sylAsset,
+    limit: "1000"
+  };
 
-    let transaction = new Stellar.TransactionBuilder(distributionAccount)
-        .addOperation(Stellar.Operation.changeTrust(changeTrustOpts))
-        .build()
+  let transaction = new Stellar.TransactionBuilder(
+    distributionAccount,
+    txOptions
+  )
+    .addOperation(Stellar.Operation.changeTrust(changeTrustOpts))
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    transaction.sign(Stellar.Keypair.fromSecret(distributionAccountPair.secretSeed))
+  transaction.sign(
+    Stellar.Keypair.fromSecret(distributionAccountPair.secretSeed)
+  );
 
-    try {
-        await server.submitTransaction(transaction)
-    } catch (e) {
-        console.log(e.response.data.extras.result_codes);
-        throw e
-    }
-
-}
+  try {
+    await server.submitTransaction(transaction);
+  } catch (e) {
+    console.log(e.response.data.extras.result_codes);
+    throw e;
+  }
+};
 
 main()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

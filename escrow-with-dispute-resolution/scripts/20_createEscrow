@@ -1,29 +1,41 @@
 #!/usr/bin/env node
 
-const { Stellar, server } = require('./lib/sdk')
-const { escrowPair, alicePair } = require('../pairs.json')
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const { escrowPair, alicePair } = require("../pairs.json");
 
-const baseReserve = 0.5
-const numberOfEntries = 5
+const baseReserve = 0.5;
+const numberOfEntries = 5;
 
 const createEscrow = async (alicePair, escrowPublicKey) => {
+  const aliceAccount = await server.loadAccount(alicePair.publicKey);
+  const aliceSecret = Stellar.Keypair.fromSecret(alicePair.secretSeed);
 
-    const aliceAccount = await server.loadAccount(alicePair.publicKey)
-    const aliceSecret = Stellar.Keypair.fromSecret(alicePair.secretSeed)
+  const txOptions = {
+    fee: await server.fetchBaseFee()
+  };
 
-    const transaction = new Stellar.TransactionBuilder(aliceAccount)
-        .addOperation(Stellar.Operation.createAccount({
-            destination: escrowPublicKey,
-            startingBalance: new Number((2 + numberOfEntries) * baseReserve).toString()
-        }))
-        .build()
-        
-    transaction.sign(aliceSecret)
-    
-    await server.submitTransaction(transaction)
+  const transaction = new Stellar.TransactionBuilder(aliceAccount, txOptions)
+    .addOperation(
+      Stellar.Operation.createAccount({
+        destination: escrowPublicKey,
+        startingBalance: new Number(
+          (2 + numberOfEntries) * baseReserve
+        ).toString()
+      })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-}
+  transaction.sign(aliceSecret);
+
+  await server.submitTransaction(transaction);
+};
 
 createEscrow(alicePair, escrowPair.publicKey)
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e.response ? e.response.data.extras.result_codes : e);
+    throw e;
+  });

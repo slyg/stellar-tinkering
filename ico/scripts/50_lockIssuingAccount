@@ -1,34 +1,42 @@
 #!/usr/bin/env node
-const { Stellar, server } = require('./lib/sdk')
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
 
-const { issuingAccountPair } = require('../pairs.json')
+const { issuingAccountPair } = require("../pairs.json");
 
 const main = async () => {
+  const issuingAccount = await server.loadAccount(issuingAccountPair.publicKey);
 
-    const issuingAccount = await server.loadAccount(issuingAccountPair.publicKey)
+  const txOptions = {
+    fee: await await server.fetchBaseFee()
+  };
 
-    const thresholds = {
-        masterWeight: 0, // Issuing account has a weight of 0, no rights :)
-        lowThreshold: 0,
-        medThreshold: 0,
-        highThreshold: 0, // Means no transaction can be performed anymore on this account
-    }
+  const thresholds = {
+    masterWeight: 0, // Issuing account has a weight of 0, no rights :)
+    lowThreshold: 0,
+    medThreshold: 0,
+    highThreshold: 0 // Means no transaction can be performed anymore on this account
+  };
 
-    let transaction = new Stellar.TransactionBuilder(issuingAccount)
-        .addOperation(Stellar.Operation.setOptions(thresholds))
-        .build()
+  let transaction = new Stellar.TransactionBuilder(issuingAccount, txOptions)
+    .addOperation(Stellar.Operation.setOptions(thresholds))
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    transaction.sign(Stellar.Keypair.fromSecret(issuingAccountPair.secretSeed))
+  transaction.sign(Stellar.Keypair.fromSecret(issuingAccountPair.secretSeed));
 
-    try {
-        await server.submitTransaction(transaction)
-    } catch (e) {
-        console.log(e.response.data.extras.result_codes);
-        throw e
-    }
-
-}
+  try {
+    await server.submitTransaction(transaction);
+  } catch (e) {
+    console.log(e.response.data.extras.result_codes);
+    throw e;
+  }
+};
 
 main()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

@@ -1,26 +1,36 @@
 #!/usr/bin/env node
 
-const { Stellar, server } = require('./lib/sdk')
-const { alicePair, escrowPair } = require('../pairs.json')
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const { alicePair, escrowPair } = require("../pairs.json");
 
 const fundEscrow = async () => {
+  const aliceAccount = await server.loadAccount(alicePair.publicKey);
 
-    const aliceAccount = await server.loadAccount(alicePair.publicKey)
+  const txOptions = {
+    fee: await server.fetchBaseFee()
+  };
 
-    const transaction = new Stellar.TransactionBuilder(aliceAccount)
-        .addOperation(Stellar.Operation.payment({
-            destination: escrowPair.publicKey,
-            asset: Stellar.Asset.native(),
-            amount: '100.0000000',
-        }))
-        .build()
-        
-    transaction.sign(Stellar.Keypair.fromSecret(alicePair.secretSeed))
+  const transaction = new Stellar.TransactionBuilder(aliceAccount, txOptions)
+    .addOperation(
+      Stellar.Operation.payment({
+        destination: escrowPair.publicKey,
+        asset: Stellar.Asset.native(),
+        amount: "100.0000000"
+      })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    await server.submitTransaction(transaction)
+  transaction.sign(Stellar.Keypair.fromSecret(alicePair.secretSeed));
 
-}
+  await server.submitTransaction(transaction);
+};
 
 fundEscrow()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e.response ? e.response.data.extras.result_codes : e);
+    throw e;
+  });

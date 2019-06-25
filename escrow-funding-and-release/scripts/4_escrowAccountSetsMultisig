@@ -1,53 +1,65 @@
 #!/usr/bin/env node
-const fs = require('fs').promises
-const { Stellar, server } = require('./lib/sdk')
+const fs = require("fs").promises;
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
 
-const [escrowPair, pairA, pairB] = require('../pairs.json')
+const [escrowPair, pairA, pairB] = require("../pairs.json");
 
-const setEscrowMultisig = async (escrowPair, pairAPublicKey, pairBPublicKey) => {
+const setEscrowMultisig = async (
+  escrowPair,
+  pairAPublicKey,
+  pairBPublicKey
+) => {
+  const escrowKeyPair = Stellar.Keypair.fromSecret(escrowPair.secretSeed);
 
-    const escrowKeyPair = Stellar.Keypair.fromSecret(escrowPair.secretSeed)
+  const escrowAccount = await server.loadAccount(escrowPair.publicKey);
 
-    const escrowAccount = await server.loadAccount(escrowPair.publicKey)
+  const thresholds = {
+    masterWeight: 0, // Escrow account has a weight of 0, no rights :)
+    lowThreshold: 2,
+    medThreshold: 2, // payment is medium threshold
+    highThreshold: 2
+  };
 
-    const thresholds = {
-        masterWeight: 0, // Escrow account has a weight of 0, no rights :)
-        lowThreshold: 2,
-        medThreshold: 2, // payment is medium threshold
-        highThreshold: 2,
+  const extraSignerA = {
+    signer: {
+      ed25519PublicKey: pairAPublicKey,
+      weight: 1
     }
+  };
 
-    const extraSignerA = {
-        signer: {
-            ed25519PublicKey: pairAPublicKey,
-            weight: 1,
-        }
+  const extraSignerB = {
+    signer: {
+      ed25519PublicKey: pairBPublicKey,
+      weight: 1
     }
+  };
 
-    const extraSignerB = {
-        signer: {
-            ed25519PublicKey: pairBPublicKey,
-            weight: 1,
-        }
-    }
+  const txOptions = {
+    fee: await server.fetchBaseFee()
+  };
 
-    let transaction = new Stellar.TransactionBuilder(escrowAccount)
-        .addOperation(Stellar.Operation.setOptions(thresholds))
-        .addOperation(Stellar.Operation.setOptions(extraSignerA))
-        .addOperation(Stellar.Operation.setOptions(extraSignerB))
-        .build()
+  let transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(Stellar.Operation.setOptions(thresholds))
+    .addOperation(Stellar.Operation.setOptions(extraSignerA))
+    .addOperation(Stellar.Operation.setOptions(extraSignerB))
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    transaction.sign(escrowKeyPair)
+  transaction.sign(escrowKeyPair);
 
-    try {
-        await server.submitTransaction(transaction)
-    } catch (e) {
-        console.log(e.response.data.extras.result_codes);
-        throw e
-    }
-
-}
+  try {
+    await server.submitTransaction(transaction);
+  } catch (e) {
+    console.log(e.response.data.extras.result_codes);
+    throw e;
+  }
+};
 
 setEscrowMultisig(escrowPair, pairA.publicKey, pairB.publicKey)
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

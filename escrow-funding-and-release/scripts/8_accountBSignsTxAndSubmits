@@ -1,31 +1,36 @@
 #!/usr/bin/env node
-const fs = require('fs').promises
-const { Stellar, server } = require('./lib/sdk')
-const [,, pairB] = require('../pairs.json')
+const fs = require("fs").promises;
+const { Stellar, server } = require("./lib/sdk");
+const [, , pairB] = require("../pairs.json");
 
-const releaseFundsToB = async (secret) => {
+const releaseFundsToB = async secret => {
+  const fundsReleaseTx = await fs.readFile("./fundsReleaseSignedByATx.x", {
+    encoding: "base64"
+  });
 
-    const fundsReleaseTx = await fs.readFile('./fundsReleaseSignedByATx.x', { encoding: 'base64' })
+  const buffer = Buffer.from(fundsReleaseTx, "base64");
 
-    const buffer = Buffer.from(fundsReleaseTx, 'base64')
+  const envelope = Stellar.xdr.TransactionEnvelope.fromXDR(buffer, "base64");
 
-    const envelope = Stellar.xdr.TransactionEnvelope.fromXDR(buffer, 'base64')
+  const transaction = new Stellar.Transaction(envelope);
 
-    const transaction = new Stellar.Transaction(envelope)
+  const KeypairB = Stellar.Keypair.fromSecret(secret);
 
-    const KeypairB = Stellar.Keypair.fromSecret(secret)
+  transaction.sign(KeypairB);
 
-    transaction.sign(KeypairB)
-
-    try {
-        await server.submitTransaction(transaction)
-    } catch (e) {
-        console.log(e.response.data.extras.result_codes);
-        throw e
-    }
-
-}
+  try {
+    await server.submitTransaction(transaction);
+  } catch (e) {
+    console.log(e.response.data.extras.result_codes);
+    throw e;
+  }
+};
 
 releaseFundsToB(pairB.secretSeed)
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

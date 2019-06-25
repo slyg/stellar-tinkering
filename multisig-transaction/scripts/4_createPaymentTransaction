@@ -1,34 +1,44 @@
 #!/usr/bin/env node
-const fs = require('fs').promises
-const { Stellar, server } = require('./lib/sdk')
-const [pairA, pairB] = require('../pairs.json')
+const fs = require("fs").promises;
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const [pairA, pairB] = require("../pairs.json");
 
 const createTransaction = async (pairA, pairB) => {
+  const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed);
 
-    const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed)
+  const accountA = await server.loadAccount(pairA.publicKey);
 
-    const accountA = await server.loadAccount(pairA.publicKey)
+  const txOptions = {
+    fee: await server.fetchBaseFee()
+  };
 
-    const paymentToB = {
-        destination: pairB.publicKey,
-        asset: Stellar.Asset.native(),
-        amount: '20.0000000',
-    }
+  const paymentToB = {
+    destination: pairB.publicKey,
+    asset: Stellar.Asset.native(),
+    amount: "20.0000000"
+  };
 
-    let transaction = new Stellar.TransactionBuilder(accountA)
-        .addOperation(Stellar.Operation.payment(paymentToB))
-        .build();
+  let transaction = new Stellar.TransactionBuilder(accountA, txOptions)
+    .addOperation(Stellar.Operation.payment(paymentToB))
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    transaction.sign(KeypairA) // account A signs the transaction
+  transaction.sign(KeypairA); // account A signs the transaction
 
-    const envelope = transaction.toEnvelope()
+  const envelope = transaction.toEnvelope();
 
-    const txEnvelopeXDR = envelope.toXDR('base64') // buffer
+  const txEnvelopeXDR = envelope.toXDR("base64"); // buffer
 
-    await fs.writeFile('transactionSignedByA.txt', txEnvelopeXDR, { encoding: 'base64' })
-
-}
+  await fs.writeFile("transactionSignedByA.txt", txEnvelopeXDR, {
+    encoding: "base64"
+  });
+};
 
 createTransaction(pairA, pairB)
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });

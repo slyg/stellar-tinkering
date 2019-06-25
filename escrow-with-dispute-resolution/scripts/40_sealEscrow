@@ -1,51 +1,68 @@
 #!/usr/bin/env node
 
-const { BigNumber } = require('bignumber.js')
-const { Stellar, server } = require('./lib/sdk')
-const { loadTx } = require('./lib/txUtils')
-const { escrowPair, alicePair, bobPair } = require('../pairs.json')
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const { loadTx } = require("./lib/txUtils");
+const { escrowPair } = require("../pairs.json");
 
 const multisig = async () => {
+  const [proceedTx, recoverTx, disputeTx] = await Promise.all([
+    loadTx("./proceedT.x"),
+    loadTx("./recoverT.x"),
+    loadTx("disputeT.x")
+  ]);
 
-    const [ proceedTx, recoverTx, disputeTx ] = await Promise.all([
-        loadTx('./proceedT.x'), loadTx('./recoverT.x'), loadTx('disputeT.x')
-    ])
+  const escrowAccount = await server.loadAccount(escrowPair.publicKey);
 
-    const escrowAccount = await server.loadAccount(escrowPair.publicKey)
+  const txOptions = {
+    fee: await server.fetchBaseFee()
+  };
 
-    const transaction = new Stellar.TransactionBuilder(escrowAccount)
-        .addOperation(Stellar.Operation.setOptions({
-            signer: {
-                preAuthTx: proceedTx.hash(),
-                weight: 1,
-            },
-        }))
-        .addOperation(Stellar.Operation.setOptions({
-            signer: {
-                preAuthTx: recoverTx.hash(),
-                weight: 1,
-            },
-        }))
-        .addOperation(Stellar.Operation.setOptions({
-            signer: {
-                preAuthTx: disputeTx.hash(),
-                weight: 1,
-            },
-        }))
-        .addOperation(Stellar.Operation.setOptions({
-            masterWeight: 0,
-            lowThreshold: 1,
-            medThreshold: 1,
-            highThreshold: 1,
-        }))
-        .build()
-        
-    transaction.sign(Stellar.Keypair.fromSecret(escrowPair.secretSeed))
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(
+      Stellar.Operation.setOptions({
+        signer: {
+          preAuthTx: proceedTx.hash(),
+          weight: 1
+        }
+      })
+    )
+    .addOperation(
+      Stellar.Operation.setOptions({
+        signer: {
+          preAuthTx: recoverTx.hash(),
+          weight: 1
+        }
+      })
+    )
+    .addOperation(
+      Stellar.Operation.setOptions({
+        signer: {
+          preAuthTx: disputeTx.hash(),
+          weight: 1
+        }
+      })
+    )
+    .addOperation(
+      Stellar.Operation.setOptions({
+        masterWeight: 0,
+        lowThreshold: 1,
+        medThreshold: 1,
+        highThreshold: 1
+      })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    await server.submitTransaction(transaction)
+  transaction.sign(Stellar.Keypair.fromSecret(escrowPair.secretSeed));
 
-}
+  await server.submitTransaction(transaction);
+};
 
 multisig()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e.response ? e.response.data.extras.result_codes : e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e.response ? e.response.data.extras.result_codes : e);
+    throw e;
+  });

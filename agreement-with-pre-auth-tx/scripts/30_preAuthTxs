@@ -1,86 +1,99 @@
 #!/usr/bin/env node
 
-const { BigNumber } = require('bignumber.js')
-const { saveTx } = require('./lib/txUtils')
-const { Stellar, server } = require('./lib/sdk')
-const { escrowPair, alicePair, bobPair } = require('../pairs.json')
+const { BigNumber } = require("bignumber.js");
+const { saveTx } = require("./lib/txUtils");
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const { escrowPair, alicePair, bobPair } = require("../pairs.json");
 
-const fiveMin = 300
-const tenMin = 600
-const now = new BigNumber( Math.floor(Date.now()) ).dividedToIntegerBy(1000)
-const lockPeriod = now.plus(fiveMin)
-const recoverPeriod = now.plus(tenMin)
+const fiveMin = 300;
+const tenMin = 600;
+const now = new BigNumber(Math.floor(Date.now())).dividedToIntegerBy(1000);
+const lockPeriod = now.plus(fiveMin);
+const recoverPeriod = now.plus(tenMin);
 
 const createProceedTx = async () => {
-    const { sequence } = await server.loadAccount(escrowPair.publicKey)
+  const { sequence } = await server.loadAccount(escrowPair.publicKey);
 
-    const escrowAccountSequence = new BigNumber(sequence)
+  const escrowAccountSequence = new BigNumber(sequence);
 
-    // Sequence number N + 1
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountSequence.plus(1).valueOf()
+  // Sequence number N + 1
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountSequence.plus(1).valueOf()
+  );
+
+  // Authorize transaction after 5 minutes and then for 5 minutes
+  const txOptions = {
+    timebounds: {
+      minTime: lockPeriod.toNumber(),
+      maxTime: recoverPeriod.toNumber()
+    },
+    fee: await server.fetchBaseFee()
+  };
+
+  const paymentToBob = {
+    destination: bobPair.publicKey,
+    asset: Stellar.Asset.native(),
+    amount: "100.00000000"
+  };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(Stellar.Operation.payment(paymentToBob))
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: alicePair.publicKey })
     )
+    .build();
 
-    // Authorize transaction after 5 minutes and then for 5 minutes
-    const txOptions = {
-        timebounds: {
-            minTime: lockPeriod.toNumber(),
-            maxTime: recoverPeriod.toNumber(),
-        }
-    }
-
-    const paymentToBob = {
-        destination: bobPair.publicKey,
-        asset: Stellar.Asset.native(),
-        amount: '100.00000000',
-    }
-
-    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
-        .addOperation(Stellar.Operation.payment(paymentToBob))
-        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
-        .build()
-
-    return transaction
-
-}
+  return transaction;
+};
 
 const createRecoverTx = async () => {
-    const { sequence } = await server.loadAccount(escrowPair.publicKey)
+  const { sequence } = await server.loadAccount(escrowPair.publicKey);
 
-    const escrowAccountSequence = new BigNumber(sequence)
+  const escrowAccountSequence = new BigNumber(sequence);
 
-    // Sequence number N + 1
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountSequence.plus(1).valueOf()
+  // Sequence number N + 1
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountSequence.plus(1).valueOf()
+  );
+
+  // Authorize transaction after 10 minutes
+  const txOptions = {
+    timebounds: {
+      minTime: recoverPeriod.toNumber(),
+      maxTime: 0
+    },
+    fee: await server.fetchBaseFee()
+  };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: alicePair.publicKey })
     )
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    // Authorize transaction after 10 minutes
-    const txOptions = {
-        timebounds: {
-            minTime: recoverPeriod.toNumber(),
-            maxTime: 0,
-        }
-    }
-
-    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
-        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
-        .build()
-
-    return transaction
-
-}
+  return transaction;
+};
 
 const main = async () => {
-    const [proceedTx, recoverTx] = await Promise.all([createProceedTx(), createRecoverTx()])
+  const [proceedTx, recoverTx] = await Promise.all([
+    createProceedTx(),
+    createRecoverTx()
+  ]);
 
-    await Promise.all([
-        saveTx('proceedT.x', proceedTx),
-        saveTx('recoverT.x', recoverTx)
-    ])
-}
+  await Promise.all([
+    saveTx("proceedT.x", proceedTx),
+    saveTx("recoverT.x", recoverTx)
+  ]);
+};
 
 main()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e);
+    throw e;
+  });

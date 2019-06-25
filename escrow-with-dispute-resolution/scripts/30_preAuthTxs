@@ -1,182 +1,231 @@
 #!/usr/bin/env node
 
-const { BigNumber } = require('bignumber.js')
-const { saveTx } = require('./lib/txUtils')
-const { Stellar, server } = require('./lib/sdk')
-const { escrowPair, alicePair, bobPair, mediatorPair } = require('../pairs.json')
+const { BigNumber } = require("bignumber.js");
+const { saveTx } = require("./lib/txUtils");
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
+const {
+  escrowPair,
+  alicePair,
+  bobPair,
+  mediatorPair
+} = require("../pairs.json");
 
-const fiveMin = 30
-const tenMin = 60
-const fifteenMin = 90
-const now = new BigNumber( Math.floor(Date.now()) ).dividedToIntegerBy(1000)
-const disputePeriodStart = now.plus(fiveMin)
-const disputePeriodEnd = now.plus(tenMin)
-const lockPeriodEnd = now.plus(tenMin)
-const recoverPeriodStart = now.plus(fifteenMin)
+const fiveMin = 30;
+const tenMin = 60;
+const fifteenMin = 90;
+const now = new BigNumber(Math.floor(Date.now())).dividedToIntegerBy(1000);
+const disputePeriodStart = now.plus(fiveMin);
+const disputePeriodEnd = now.plus(tenMin);
+const lockPeriodEnd = now.plus(tenMin);
+const recoverPeriodStart = now.plus(fifteenMin);
 
-const createProceedTx = (escrowAccountCurrentSequence) => {
+const createProceedTx = async escrowAccountCurrentSequence => {
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountCurrentSequence.plus(1).valueOf()
+  );
 
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountCurrentSequence.plus(1).valueOf()
+  const txOptions = {
+    timebounds: {
+      minTime: lockPeriodEnd.toNumber(),
+      maxTime: 0
+    },
+    fee: await server.fetchBaseFee()
+  };
+
+  const paymentToBob = {
+    destination: bobPair.publicKey,
+    asset: Stellar.Asset.native(),
+    amount: "100.00000000"
+  };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(Stellar.Operation.payment(paymentToBob))
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: alicePair.publicKey })
     )
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    const txOptions = {
-        timebounds: {
-            minTime: lockPeriodEnd.toNumber(),
-            maxTime: 0,
+  return transaction;
+};
+
+const createRecoverTx = async escrowAccountCurrentSequence => {
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountCurrentSequence.plus(1).valueOf()
+  );
+
+  const txOptions = {
+    timebounds: {
+      minTime: recoverPeriodStart.toNumber(),
+      maxTime: 0
+    },
+    fee: await server.fetchBaseFee()
+  };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: alicePair.publicKey })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
+
+  return transaction;
+};
+
+const createDisputeProceedTx = async escrowAccountCurrentSequence => {
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountCurrentSequence.plus(2).valueOf()
+  );
+
+  const paymentToBob = {
+    destination: bobPair.publicKey,
+    asset: Stellar.Asset.native(),
+    amount: "90.00000000"
+  };
+
+  // Mediation fee
+  const mediatorFee = {
+    destination: mediatorPair.publicKey,
+    asset: Stellar.Asset.native(),
+    amount: "10.00000000"
+  };
+
+  const txOptions = { fee: await server.fetchBaseFee() };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(Stellar.Operation.payment(paymentToBob))
+    .addOperation(Stellar.Operation.payment(mediatorFee))
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: alicePair.publicKey })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
+
+  return transaction;
+};
+
+const createDisputeRecoverTx = async escrowAccountCurrentSequence => {
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountCurrentSequence.plus(2).valueOf()
+  );
+
+  // Mediation fee
+  const mediatorFee = {
+    destination: mediatorPair.publicKey,
+    asset: Stellar.Asset.native(),
+    amount: "10.00000000"
+  };
+
+  const txOptions = { fee: await server.fetchBaseFee() };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(Stellar.Operation.payment(mediatorFee))
+    .addOperation(
+      Stellar.Operation.accountMerge({ destination: alicePair.publicKey })
+    )
+    .setTimeout(TimeoutInfinite)
+    .build();
+
+  return transaction;
+};
+
+const createDisputeTx = async (
+  disputeProceedTx,
+  disputeRecoverTx,
+  escrowAccountCurrentSequence
+) => {
+  const escrowAccount = new Stellar.Account(
+    escrowPair.publicKey,
+    escrowAccountCurrentSequence.plus(1).valueOf()
+  );
+
+  const txOptions = {
+    timebounds: {
+      minTime: disputePeriodStart.toNumber(),
+      maxTime: disputePeriodEnd.toNumber()
+    },
+    fee: await server.fetchBaseFee()
+  };
+
+  const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
+    .addOperation(
+      Stellar.Operation.setOptions({
+        signer: {
+          ed25519PublicKey: mediatorPair.publicKey, // Mediator takes ownership of the escrow account
+          weight: 2 // Weight of 2 to avoid both dispute transactions being used randomly
         }
-    }
-
-    const paymentToBob = {
-        destination: bobPair.publicKey,
-        asset: Stellar.Asset.native(),
-        amount: '100.00000000',
-    }
-
-    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
-        .addOperation(Stellar.Operation.payment(paymentToBob))
-        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
-        .build()
-
-    return transaction
-
-}
-
-const createRecoverTx = (escrowAccountCurrentSequence) => {
-
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountCurrentSequence.plus(1).valueOf()
+      })
     )
-
-    const txOptions = {
-        timebounds: {
-            minTime: recoverPeriodStart.toNumber(),
-            maxTime: 0,
+    .addOperation(
+      Stellar.Operation.setOptions({
+        signer: {
+          preAuthTx: disputeProceedTx.hash(),
+          weight: 1
         }
-    }
-
-    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
-        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
-        .build()
-
-    return transaction
-
-}
-
-const createDisputeProceedTx = (escrowAccountCurrentSequence) => {
-    
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountCurrentSequence.plus(2).valueOf()
+      })
     )
-
-    const paymentToBob = {
-        destination: bobPair.publicKey,
-        asset: Stellar.Asset.native(),
-        amount: '90.00000000',
-    }
-
-    // Mediation fee
-    const mediatorFee = {
-        destination: mediatorPair.publicKey,
-        asset: Stellar.Asset.native(),
-        amount: '10.00000000',
-    }
-
-    const transaction = new Stellar.TransactionBuilder(escrowAccount)
-        .addOperation(Stellar.Operation.payment(paymentToBob))
-        .addOperation(Stellar.Operation.payment(mediatorFee))
-        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
-        .build()
-
-    return transaction
-}
-
-const createDisputeRecoverTx = (escrowAccountCurrentSequence) => {
-    
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountCurrentSequence.plus(2).valueOf()
-    )
-    
-    // Mediation fee
-    const mediatorFee = {
-        destination: mediatorPair.publicKey,
-        asset: Stellar.Asset.native(),
-        amount: '10.00000000',
-    }
-
-    const transaction = new Stellar.TransactionBuilder(escrowAccount)
-        .addOperation(Stellar.Operation.payment(mediatorFee))
-        .addOperation(Stellar.Operation.accountMerge({ destination: alicePair.publicKey }))
-        .build()
-
-    return transaction
-}
-
-const createDisputeTx = (disputeProceedTx, disputeRecoverTx, escrowAccountCurrentSequence) => {
-
-    const escrowAccount = new Stellar.Account(
-        escrowPair.publicKey,
-        escrowAccountCurrentSequence.plus(1).valueOf()
-    )
-
-    const txOptions = {
-        timebounds: {
-            minTime: disputePeriodStart.toNumber(),
-            maxTime: disputePeriodEnd.toNumber(),
+    .addOperation(
+      Stellar.Operation.setOptions({
+        signer: {
+          preAuthTx: disputeRecoverTx.hash(),
+          weight: 1
         }
-    }
+      })
+    )
+    .addOperation(
+      Stellar.Operation.setOptions({
+        masterWeight: 0,
+        lowThreshold: 3,
+        medThreshold: 3,
+        highThreshold: 3
+      })
+    )
+    .build();
 
-    const transaction = new Stellar.TransactionBuilder(escrowAccount, txOptions)
-        .addOperation(Stellar.Operation.setOptions({signer: {
-            ed25519PublicKey: mediatorPair.publicKey, // Mediator takes ownership of the escrow account
-            weight: 2, // Weight of 2 to avoid both dispute transactions being used randomly
-        }}))
-        .addOperation(Stellar.Operation.setOptions({signer: {
-            preAuthTx: disputeProceedTx.hash(),
-            weight: 1,
-        }}))
-        .addOperation(Stellar.Operation.setOptions({signer: {
-            preAuthTx: disputeRecoverTx.hash(),
-            weight: 1,
-        }}))
-        .addOperation(Stellar.Operation.setOptions({
-            masterWeight: 0,
-            lowThreshold: 3,
-            medThreshold: 3,
-            highThreshold: 3,
-        }))
-        .build()
-
-    return transaction
-
-}
+  return transaction;
+};
 
 const main = async () => {
+  const { sequence } = await server.loadAccount(escrowPair.publicKey);
 
-    const { sequence } = await server.loadAccount(escrowPair.publicKey)
+  const escrowAccountCurrentSequence = new BigNumber(sequence);
 
-    const escrowAccountCurrentSequence = new BigNumber(sequence)
+  const [
+    proceedTx,
+    recoverTx,
+    disputeProceedTx,
+    disputeRecoverTx
+  ] = await Promise.all([
+    createProceedTx(escrowAccountCurrentSequence),
+    createRecoverTx(escrowAccountCurrentSequence),
+    createDisputeProceedTx(escrowAccountCurrentSequence),
+    createDisputeRecoverTx(escrowAccountCurrentSequence)
+  ]);
 
-    const proceedTx = createProceedTx(escrowAccountCurrentSequence)
-    const recoverTx = createRecoverTx(escrowAccountCurrentSequence)
-    const disputeProceedTx = createDisputeProceedTx(escrowAccountCurrentSequence)
-    const disputeRecoverTx = createDisputeRecoverTx(escrowAccountCurrentSequence)
+  const disputeTx = await createDisputeTx(
+    disputeProceedTx,
+    disputeRecoverTx,
+    escrowAccountCurrentSequence
+  );
 
-    const disputeTx = createDisputeTx(disputeProceedTx, disputeRecoverTx, escrowAccountCurrentSequence)
-
-    await Promise.all([
-        saveTx('proceedT.x', proceedTx),
-        saveTx('recoverT.x', recoverTx),
-        saveTx('disputeProceedT.x', disputeProceedTx),
-        saveTx('disputeRecoverT.x', disputeRecoverTx),
-        saveTx('disputeT.x', disputeTx)
-    ])
-}
+  await Promise.all([
+    saveTx("proceedT.x", proceedTx),
+    saveTx("recoverT.x", recoverTx),
+    saveTx("disputeProceedT.x", disputeProceedTx),
+    saveTx("disputeRecoverT.x", disputeRecoverTx),
+    saveTx("disputeT.x", disputeTx)
+  ]);
+};
 
 main()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.log(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.log(e);
+    throw e;
+  });

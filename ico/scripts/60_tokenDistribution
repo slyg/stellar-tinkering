@@ -1,36 +1,51 @@
 #!/usr/bin/env node
-const { Stellar, server } = require('./lib/sdk')
+const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
 
-const { distributionAccountPair, issuingAccountPair } = require('../pairs.json')
+const {
+  distributionAccountPair,
+  issuingAccountPair
+} = require("../pairs.json");
 
 const main = async () => {
+  const issuingAccount = await server.loadAccount(
+    distributionAccountPair.publicKey
+  );
 
-    const issuingAccount = await server.loadAccount(distributionAccountPair.publicKey)
+  const sylAsset = new Stellar.Asset("SYL", issuingAccountPair.publicKey);
 
-    const sylAsset = new Stellar.Asset('SYL', issuingAccountPair.publicKey)
+  const txOptions = {
+    fee: await await server.fetchBaseFee()
+  };
 
-    const manageOfferOpts = {
-        selling: sylAsset,
-        buying: Stellar.Asset.native(),
-        amount: '1000.00000000',
-        price: '1.00000000'
-    }
+  const manageSellOfferOpts = {
+    selling: sylAsset,
+    buying: Stellar.Asset.native(),
+    amount: "1000.00000000",
+    price: "1.00000000"
+  };
 
-    let transaction = new Stellar.TransactionBuilder(issuingAccount)
-        .addOperation(Stellar.Operation.manageOffer(manageOfferOpts))
-        .build()
+  let transaction = new Stellar.TransactionBuilder(issuingAccount, txOptions)
+    .addOperation(Stellar.Operation.manageSellOffer(manageSellOfferOpts))
+    .setTimeout(TimeoutInfinite)
+    .build();
 
-    transaction.sign(Stellar.Keypair.fromSecret(distributionAccountPair.secretSeed))
+  transaction.sign(
+    Stellar.Keypair.fromSecret(distributionAccountPair.secretSeed)
+  );
 
-    try {
-        await server.submitTransaction(transaction)
-    } catch (e) {
-        console.log(e.response.data.extras.result_codes);
-        throw e
-    }
-
-}
+  try {
+    await server.submitTransaction(transaction);
+  } catch (e) {
+    console.log(e.response.data.extras.result_codes);
+    throw e;
+  }
+};
 
 main()
-    .then(() => { console.log('ok') })
-    .catch((e) => { console.error(e); throw e})
+  .then(() => {
+    console.log("ok");
+  })
+  .catch(e => {
+    console.error(e);
+    throw e;
+  });
