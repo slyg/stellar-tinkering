@@ -6,8 +6,6 @@ const pairs = require("../pairs.json");
 
 const server = new Stellar.Server("https://horizon-testnet.stellar.org");
 
-Stellar.Network.useTestNetwork();
-
 const checkAccounts = async pairs => {
   const accounts = await Promise.all(
     pairs.map(async pair => await server.loadAccount(pair.publicKey))

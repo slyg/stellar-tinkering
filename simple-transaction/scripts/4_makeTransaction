@@ -4,15 +4,14 @@ const Stellar = require("stellar-sdk");
 const { TimeoutInfinite } = require("stellar-base");
 const pairs = require("../pairs.json");
 
-Stellar.Network.useTestNetwork();
-
 const server = new Stellar.Server("https://horizon-testnet.stellar.org");
 
 const transaction = async (pairA, pairB, asset, amount) => {
   const standardTxFee = await server.fetchBaseFee();
 
   const txOptions = {
-    fee: standardTxFee
+    fee: standardTxFee,
+    networkPassphrase: Stellar.Networks.TESTNET
   };
 
   const paymentToB = {
@@ -38,7 +37,7 @@ const transaction = async (pairA, pairB, asset, amount) => {
 
 const [pairA, pairB] = pairs;
 
-transaction(pairA, pairB, Stellar.Asset.native(), "30.0000001")
+transaction(pairA, pairB, Stellar.Asset.native(), "100.0000000")
   .then(() => console.log("ok"))
   .catch(e => {
     console.error(e);
