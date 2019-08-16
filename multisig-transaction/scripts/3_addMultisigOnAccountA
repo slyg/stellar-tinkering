@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-const fs = require("fs").promises;
 const { Stellar, server, TimeoutInfinite } = require("./lib/sdk");
 
 const [pairA, pairB] = require("../pairs.json");
@@ -8,7 +7,8 @@ const addMultisigOnAccountA = async (pairA, pairB) => {
   const standardTxFee = await server.fetchBaseFee();
 
   const txOptions = {
-    fee: standardTxFee
+    fee: standardTxFee,
+    networkPassphrase: Stellar.Networks.TESTNET
   };
 
   const KeypairA = Stellar.Keypair.fromSecret(pairA.secretSeed);

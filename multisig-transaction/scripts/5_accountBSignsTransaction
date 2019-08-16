@@ -14,7 +14,10 @@ const accountBSigns = async pairB => {
 
   const envelope = Stellar.xdr.TransactionEnvelope.fromXDR(buffer, "base64");
 
-  const transaction = new Stellar.Transaction(envelope);
+  const transaction = new Stellar.Transaction(
+    envelope,
+    Stellar.Networks.TESTNET
+  );
 
   const KeypairB = Stellar.Keypair.fromSecret(pairB.secretSeed);
 

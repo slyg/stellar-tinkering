@@ -9,7 +9,8 @@ const createTransaction = async (pairA, pairB) => {
   const accountA = await server.loadAccount(pairA.publicKey);
 
   const txOptions = {
-    fee: await server.fetchBaseFee()
+    fee: await server.fetchBaseFee(),
+    networkPassphrase: Stellar.Networks.TESTNET
   };
 
   const paymentToB = {

@@ -1,8 +1,6 @@
 const Stellar = require("stellar-sdk");
 const { TimeoutInfinite } = require("stellar-base");
 
-Stellar.Network.useTestNetwork();
-
 const TEST_SERVER_URL = "https://horizon-testnet.stellar.org";
 const testServer = new Stellar.Server(TEST_SERVER_URL);
 
