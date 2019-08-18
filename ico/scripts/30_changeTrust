@@ -8,7 +8,8 @@ const {
 
 const main = async () => {
   const txOptions = {
-    fee: await await server.fetchBaseFee()
+    fee: await await server.fetchBaseFee(),
+    networkPassphrase: Stellar.Networks.TESTNET
   };
 
   const distributionAccount = await server.loadAccount(

@@ -11,7 +11,8 @@ const main = async () => {
   const rootAccount = await server.loadAccount(rootAccountPair.publicKey);
 
   const txOptions = {
-    fee: await await server.fetchBaseFee()
+    fee: await await server.fetchBaseFee(),
+    networkPassphrase: Stellar.Networks.TESTNET
   };
 
   const issuingAccountConfig = {
